@@ -1,0 +1,32 @@
+[project]
+name = "security-ml-worker"
+version = "0.1.0"
+description = "ML-based anomaly detection worker"
+requires-python = ">=3.12"
+dependencies = [
+    "scikit-learn==1.4.2",
+    "pandas==2.2.2",
+    "numpy==1.26.4",
+    "sqlalchemy[asyncio]==2.0.30",
+    "asyncpg==0.29.0",
+    "redis==5.0.1",
+    "pydantic==2.7.1",
+    "pydantic-settings==2.3.2",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["features", "model"]
+
+[tool.setuptools.packages.find]
+include = ["*"]
+namespaces = false
+
+[tool.uv]
+dev-dependencies = [
+    "pytest==8.2.0",
+    "ruff==0.4.4",
+]

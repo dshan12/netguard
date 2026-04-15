@@ -1,0 +1,33 @@
+[project]
+name = "security-sniffer"
+version = "0.1.0"
+description = "Network packet sniffer with traffic simulation"
+requires-python = ">=3.12"
+dependencies = [
+    "scapy==2.5.0",
+    "redis==5.0.1",
+    "pydantic==2.7.1",
+    "pydantic-settings==2.3.2",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+namespaces = false
+
+[tool.setuptools]
+py-modules = ["config", "generator", "rules_engine", "sniffer"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest==8.2.0",
+    "ruff==0.4.4",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
