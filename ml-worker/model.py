@@ -16,11 +16,7 @@ class Settings(BaseSettings):
     model_update_interval: int = 300
     anomaly_threshold: float = 0.7
 
-    model_config = {"protected_namespaces": ()}
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {"protected_namespaces": (), "env_file": ".env", "case_sensitive": False}
 
 settings = Settings()
 engine = create_async_engine(settings.database_url)

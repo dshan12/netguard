@@ -9,9 +9,7 @@ class Settings(BaseSettings):
     packet_batch_size: int = 100
     packet_batch_timeout: float = 0.1
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {"env_file": ".env", "case_sensitive": False}
 
 
 @lru_cache

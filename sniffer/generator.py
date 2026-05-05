@@ -179,7 +179,7 @@ class TrafficGenerator:
         infected = random.choice(self.internal_ips)
         c2 = random.choice(self.c2_servers)
         interval = random.uniform(5.0, 30.0)
-        for _ in range(random.randint(1, 3)):
+        for _ in range(random.randint(4, 6)):
             packets.append(PacketData(
                 timestamp=time.time(),
                 src_ip=infected,
