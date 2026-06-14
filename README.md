@@ -13,7 +13,7 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A containerized, self-hosted security analytics platform combining signature-based detection with an ensemble of machine learning models to identify network threats in real time.
+Captures network traffic, detects attacks with rules + ML, and shows everything on a live dashboard. Containerized and self-hosted.
 
 </div>
 
@@ -21,9 +21,9 @@ A containerized, self-hosted security analytics platform combining signature-bas
 
 ## About
 
-NetGuard is a mini enterprise-grade intrusion detection platform inspired by products like CrowdStrike and Splunk. It captures network traffic, extracts flow metadata, runs a 5-rule signature engine alongside a 3-model ML ensemble (Isolation Forest, Autoencoder, K-Means), and visualizes everything on a live React dashboard.
+NetGuard is a network intrusion detection platform similar in spirit to CrowdStrike or Splunk but runs locally in Docker. It captures packets, runs a 5-rule detection engine and a 3-model ML ensemble (Isolation Forest, Autoencoder, K-Means), then surfaces everything on a React dashboard.
 
-**What makes this different from typical student projects:** The ML layer uses three complementary unsupervised techniques whose outputs are ensembled — most projects stop at a single model. The full stack is containerized with production-grade infrastructure (PostgreSQL, Redis streams, async workers) rather than a single monolithic script.
+Most IDS projects stop at port scan detection or a single ML model. This one chains five attack signatures with three unsupervised models whose outputs are combined.
 
 ---
 
@@ -37,7 +37,7 @@ docker compose up -d
 open http://localhost:3000
 ```
 
-The traffic simulator starts automatically — alerts appear within seconds.
+The traffic simulator starts automatically. Alerts appear within seconds.
 
 ---
 
@@ -77,18 +77,16 @@ flowchart LR
 
 ### Data Flow
 
-1. **Sniffer** captures packets (live via Scapy or simulated traffic) and publishes to Redis
-2. **Rules engine** consumes the stream and applies 5 signature-based detectors
-3. **ML worker** trains an ensemble on recent flow features and scores each IP for anomaly
-4. Both write alerts and scores to **PostgreSQL**
-5. **FastAPI** serves REST endpoints and streams real-time data via WebSocket
-6. **React dashboard** renders everything — live network map, alert timeline, geographic threat map, ML insights
+1. Sniffer captures packets (live via Scapy or simulated) and publishes to Redis
+2. Rules engine consumes the stream and applies 5 signature-based detectors
+3. ML worker trains an ensemble on recent flow features and scores each IP
+4. Both write alerts and scores to PostgreSQL
+5. FastAPI serves REST endpoints and streams live data via WebSocket
+6. React dashboard renders the live network map, alert timeline, geo map, and ML insights
 
 ---
 
-## Features
-
-### Detection Engine
+## Detection Engine
 
 | Attack Type | Method | Window | Threshold |
 |---|---|---|---|
@@ -98,23 +96,23 @@ flowchart LR
 | Beaconing | Connection interval regularity (std dev) | 300s | std dev < 0.5s |
 | Data Exfiltration | Outbound burst volume + large packet count | 60s | >10KB burst or >3 large packets |
 
-### Machine Learning Ensemble
+## Machine Learning Ensemble
 
 | Model | Type | Architecture | Role |
 |---|---|---|---|
 | Isolation Forest | Unsupervised | Recursive partitioning | Global outlier detection |
-| Autoencoder | Deep Learning | MLP: 9→12→3→12→9 | Reconstruction error scoring |
+| Autoencoder | Deep Learning | MLP: 9->12->3->12->9 | Reconstruction error scoring |
 | K-Means Clustering | Unsupervised | Dynamic k = n//10 | Centroid distance scoring |
 
-The ensemble weights are **40% Isolation Forest + 30% Autoencoder + 30% Clustering**. Alerts record which models agreed, providing interpretability.
+The ensemble weights are 40% Isolation Forest + 30% Autoencoder + 30% Clustering. Alerts record which models agreed.
 
-### Dashboard
+## Dashboard
 
-- **Live Network Map** — Canvas particle animation showing IP-to-IP flows in real time with protocol-colored trails
-- **Alert Timeline** — Color-coded by severity (Critical / High / Medium / Low)
-- **Geographic Map** — World map plotting threat source locations with pulsating markers
-- **Threat Metrics** — Live packet throughput, alert rates, active threat counts
-- **ML Insights** — Anomaly score distributions, per-model breakdown, ensemble status
+- **Live Network Map** -- Canvas particle animation showing IP-to-IP flows in real time
+- **Alert Timeline** -- Color-coded by severity (Critical / High / Medium / Low)
+- **Geographic Map** -- World map plotting threat source locations
+- **Threat Metrics** -- Live packet throughput, alert rates, active threat counts
+- **ML Insights** -- Anomaly score distributions, per-model breakdown, ensemble status
 
 ---
 
@@ -134,21 +132,21 @@ The ensemble weights are **40% Isolation Forest + 30% Autoencoder + 30% Clusteri
 
 ## API
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/health` | Service health check |
-| `GET` | `/api/packets/` | Recent packets (paginated) |
-| `GET` | `/api/packets/suspicious` | Suspicious packets |
-| `GET` | `/api/packets/ip/{ip}` | Packets by IP address |
-| `GET` | `/api/alerts/` | Alerts (filterable by severity) |
-| `GET` | `/api/alerts/stats` | Alert statistics |
-| `POST` | `/api/alerts/{id}/resolve` | Mark alert as resolved |
-| `GET` | `/api/threat-actors/` | Top threat actors by score |
-| `GET` | `/api/metrics/summary` | Dashboard metrics summary |
-| `GET` | `/api/geo/sources` | Geo-located threat sources |
-| `WS` | `/ws/live` | Real-time packet + alert stream |
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Health check |
+| `GET /api/packets/` | Recent packets (paginated) |
+| `GET /api/packets/suspicious` | Suspicious packets |
+| `GET /api/packets/ip/{ip}` | Packets by IP address |
+| `GET /api/alerts/` | Alerts (filterable by severity) |
+| `GET /api/alerts/stats` | Alert statistics |
+| `POST /api/alerts/{id}/resolve` | Mark alert as resolved |
+| `GET /api/threat-actors/` | Top threat actors by score |
+| `GET /api/metrics/summary` | Dashboard metrics |
+| `GET /api/geo/sources` | Geo-located threat sources |
+| `WS /ws/live` | Real-time packet + alert stream |
 
-Full interactive documentation at `http://localhost:8000/docs`.
+Full docs at `http://localhost:8000/docs`.
 
 ---
 
@@ -156,29 +154,28 @@ Full interactive documentation at `http://localhost:8000/docs`.
 
 ```
 netguard/
-├── docker-compose.yml         7 services
-├── backend/                   FastAPI application
-│   ├── main.py                App entry point
-│   ├── worker.py              Redis → PostgreSQL consumer
-│   ├── models/                SQLAlchemy ORM
-│   ├── routers/               API + WebSocket endpoints
-│   ├── schemas/               Pydantic models
-│   └── services/              Business logic
-├── sniffer/                   Packet capture + detection
-│   ├── sniffer.py             Scapy capture + simulation dispatch
-│   ├── generator.py           6 traffic type generator
-│   └── rules_engine.py        5 signature-based rules
-├── ml-worker/                 Machine learning pipeline
-│   ├── model.py               Training + inference loop
-│   ├── ml_ensemble.py         Ensemble detector (3 models)
-│   └── features.py            Per-IP feature extraction
-└── frontend/                  React dashboard
-    ├── src/
-    │   ├── App.tsx            4-tab layout
-    │   ├── components/        NetworkMap, AlertTimeline, GeoMap, MetricsGrid
-    │   ├── pages/             AlertsPage, MapPage, MLInsightsPage
-    │   └── hooks/             useWebSocket
-    └── ...                    Vite, Tailwind, TypeScript config
+  docker-compose.yml         7 services
+  backend/                   FastAPI application
+    main.py                  App entry point
+    worker.py                Redis to PostgreSQL consumer
+    models/                  SQLAlchemy ORM
+    routers/                 API + WebSocket endpoints
+    schemas/                 Pydantic models
+    services/                Business logic
+  sniffer/                   Packet capture + detection
+    sniffer.py               Scapy capture + simulation dispatch
+    generator.py             6 traffic type generator
+    rules_engine.py          5 signature-based rules
+  ml-worker/                 Machine learning pipeline
+    model.py                 Training + inference loop
+    ml_ensemble.py           Ensemble detector (3 models)
+    features.py              Per-IP feature extraction
+  frontend/                  React dashboard
+    src/
+      App.tsx                4-tab layout
+      components/            NetworkMap, AlertTimeline, GeoMap, MetricsGrid
+      pages/                 AlertsPage, MapPage, MLInsightsPage
+      hooks/                 useWebSocket
 ```
 
 ---
@@ -199,21 +196,21 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Services take ~30 seconds to initialize. Access the dashboard at **http://localhost:3000**.
+Services take about 30 seconds to initialize. Open **http://localhost:3000**.
 
 ### Without Docker
 
 ```bash
-# Terminal 1 — Backend
+# Terminal 1: Backend
 cd backend && uv sync && uv run uvicorn main:app --reload
 
-# Terminal 2 — Sniffer (simulation mode)
+# Terminal 2: Sniffer (simulation mode)
 cd sniffer && SIMULATION_MODE=always uv run python sniffer.py
 
-# Terminal 3 — ML Worker
+# Terminal 3: ML Worker
 cd ml-worker && uv run python model.py
 
-# Terminal 4 — Frontend
+# Terminal 4: Frontend
 cd frontend && bun install && bun run dev
 ```
 
@@ -224,9 +221,3 @@ Requires PostgreSQL and Redis running locally on default ports.
 ## License
 
 [MIT](LICENSE)
-
----
-
-## Acknowledgments
-
-Built as a portfolio project demonstrating systems, networking, security, data engineering, and machine learning integration.
